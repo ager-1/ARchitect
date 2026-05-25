@@ -57,9 +57,11 @@ public class SentisInference : MonoBehaviour
             }
         }
     }
-    void GetModelOutput()
+    public float[] GetModelOutput()
     {
         outputTensor = worker.PeekOutput() as Tensor<float>;
+        if (outputTensor != null) return outputTensor.DownloadToArray();
+        return null;
     }
     void OnDestroy()
     {
