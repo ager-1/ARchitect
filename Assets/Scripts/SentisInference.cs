@@ -12,16 +12,13 @@ public class SentisInference : MonoBehaviour
     [SerializeField] private ModelAsset onnxFile;
     [SerializeField] ARCameraManager arCameraManager;
     [SerializeField] Tensor<float> _savedTensor;
+    [SerializeField] Tensor<float> outputTensor;
     Model runtimeModel;
     Worker worker;
     void Start()
     {
         runtimeModel = ModelLoader.Load(onnxFile);
         worker = new Worker(runtimeModel, BackendType.GPUCompute);
-    }
-    void ExecuteModel()
-    {
-
     }
     public void CaptureFrame()
     {
@@ -32,28 +29,42 @@ public class SentisInference : MonoBehaviour
         {
             using (image) // 'using' ensure image.Dispose() is called automatically
             {
+                int squareSize = Mathf.Min(image.width, image.height);
+                int offsetX = (image.width - squareSize) / 2;
+                int offsetY = (image.height - squareSize) / 2;
                 var conversionParams = new XRCpuImage.ConversionParams //define how to transform the raw data into a usable texture
                 {
-                    inputRect = new RectInt(0, 0, image.width, image.height), //use the entire source image area
-                    outputDimensions = new Vector2Int(224, 224), //downscale the image
-                    outputFormat = TextureFormat.RGBA32, //convert raw sensor data into a standard color format
-                    transformation = XRCpuImage.Transformation.None //keep the orientation standard
+                    inputRect = new RectInt(offsetX, offsetY, squareSize, squareSize), 
+                    outputDimensions = new Vector2Int(224, 224),
+                    outputFormat = TextureFormat.RGBA32, 
+                    transformation = XRCpuImage.Transformation.None 
                 };
-                int size = image.GetConvertedDataSize(conversionParams); //calculate how much memory is needed for the converted pixels
-                var buffer = new NativeArray<byte>(size, Allocator.Temp); //allocate temporary highspeed memory for the pixel buffer
-                image.Convert(conversionParams, buffer); // perform the actual conversion from raw data to RGBA bytes
+                int size = image.GetConvertedDataSize(conversionParams); 
+                var buffer = new NativeArray<byte>(size, Allocator.Temp); 
+                image.Convert(conversionParams, buffer); 
 
-                //creating a temporary texture2d object to hol the pixels in Unity
+                //creating a temporary texture2d object to hold the pixels in Unity
                 Texture2D tempTexture = new Texture2D(conversionParams.outputDimensions.x, conversionParams.outputDimensions.y, TextureFormat.RGBA32, false);
-                tempTexture.LoadRawTextureData(buffer); //upload the converted byte buffer to texture
-                tempTexture.Apply();//finalize the texture to be read
+                tempTexture.LoadRawTextureData(buffer); 
+                tempTexture.Apply();
 
-                TensorShape shape = new TensorShape(1, 3, 224, 224); //define the shape(Batch:1,Channels:3,Width:224,Height:224)
-                if (_savedTensor == null) _savedTensor = new Tensor<float>(shape);//if variable empty, initialize it as a new tensor float
-                TextureConverter.ToTensor(tempTexture, _savedTensor, new TextureTransform());//copy texture to tensor variable and keep the orientation standard
-                DestroyImmediate(tempTexture);//cleanup temporary objects to prevent memory leaks
+                TensorShape shape = new TensorShape(1, 3, 224, 224); 
+                if (_savedTensor == null) _savedTensor = new Tensor<float>(shape);
+                TextureConverter.ToTensor(tempTexture, _savedTensor, new TextureTransform());
+                worker.Schedule(_savedTensor);
+                DestroyImmediate(tempTexture);
                 buffer.Dispose();
             }
         }
+    }
+    void GetModelOutput()
+    {
+        outputTensor = worker.PeekOutput() as Tensor<float>;
+    }
+    void OnDestroy()
+    {
+        if (_savedTensor != null) _savedTensor.Dispose();
+        if (outputTensor != null) outputTensor.Dispose();
+        if (worker != null) worker.Dispose();
     }
 }
