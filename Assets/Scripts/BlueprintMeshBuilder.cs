@@ -63,16 +63,37 @@ public class BlueprintMeshBuilder : MonoBehaviour
             for(int x = 0; x < 224; x++)
             {
                 int index = y * 224 + x;
-                if (aiData[index] > 0.5f)
+                if (aiData[index] > 0.1f)
                 {
                     float localX = (x - 112) * stepSize;
                     float localZ = (y - 112) * stepSize;
                     Vector3 wallWorldPosition = blueprintWorldCentre + new Vector3(localX, 0f, localZ);
                     float halfThick = stepSize / 2;
+                    int currentVert = vertices.Count;
+                    Vector3 bottomLeft = blueprintWorldCentre + new Vector3(localX - halfThick, 0f, localZ);
+                    Vector3 bottomRight = blueprintWorldCentre + new Vector3(localX + halfThick, 0f, localZ);
+                    Vector3 topLeft = blueprintWorldCentre + new Vector3(localX - halfThick, 0.05f, localZ);
+                    Vector3 topRight = blueprintWorldCentre + new Vector3(localX + halfThick, 0.05f, localZ);
+                    vertices.Add(bottomLeft);
+                    vertices.Add(bottomRight);
+                    vertices.Add(topLeft);
+                    vertices.Add(topRight);
+                    triangles.Add(currentVert);
+                    triangles.Add(currentVert + 2);
+                    triangles.Add(currentVert + 1);
+                    triangles.Add(currentVert + 1);
+                    triangles.Add(currentVert + 2);
+                    triangles.Add(currentVert + 3);
                 }
             }
         }
-        
+        Mesh proceduralMesh = new Mesh();
+        proceduralMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        proceduralMesh.vertices = vertices.ToArray();
+        proceduralMesh.triangles = triangles.ToArray();
+        proceduralMesh.RecalculateNormals();
+        meshFilter.mesh = proceduralMesh;
+        statusText.text = "Mesh successfully generated";
     }
 
 }
