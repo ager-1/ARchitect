@@ -1,7 +1,4 @@
-using NUnit.Framework;
-using System;
 using System.Collections.Generic;
-using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -66,8 +63,7 @@ public class BlueprintMeshBuilder : MonoBehaviour
                 if (aiData[index] > 0.1f)
                 {
                     float localX = (x - 112) * stepSize;
-                    float localZ = (y - 112) * stepSize;
-                    Vector3 wallWorldPosition = blueprintWorldCentre + new Vector3(localX, 0f, localZ);
+                    float localZ = (y - 112) * stepSize; 
                     float halfThick = stepSize / 2;
                     int currentVert = vertices.Count;
                     Vector3 bottomLeft = blueprintWorldCentre + new Vector3(localX - halfThick, 0f, localZ);
