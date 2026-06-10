@@ -96,7 +96,7 @@ public class BlueprintMeshBuilder : MonoBehaviour
         proceduralMesh.vertices = vertices.ToArray();
         proceduralMesh.triangles = triangles.ToArray();
         proceduralMesh.RecalculateNormals();
-        meshFilter.mesh = stepSize;
+        meshFilter.mesh = proceduralMesh;
         statusText.text = "Mesh successfully generated";
     }
     private Vector3 GetLerpedPoint(Vector3 p1, Vector3 p2, float val1, float val2)
